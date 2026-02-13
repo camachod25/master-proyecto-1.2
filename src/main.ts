@@ -51,6 +51,7 @@ async function main() {
 
   try {
     await container.ordersController.registerRoutes(fastify);
+    await container.paymentsController.registerRoutes(fastify);
 
     // Health check
     fastify.get('/health', async () => {

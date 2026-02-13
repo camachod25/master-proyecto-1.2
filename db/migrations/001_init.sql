@@ -1,6 +1,6 @@
 -- Create ENUM types
 CREATE TYPE order_status AS ENUM ('pending', 'completed', 'cancelled');
-CREATE TYPE event_type AS ENUM ('OrderCreated', 'ItemAddedToOrder');
+CREATE TYPE event_type AS ENUM ('OrderCreated', 'ItemAddedToOrder', 'PaymentCreated');
 
 -- Orders table
 CREATE TABLE orders (
@@ -31,6 +31,19 @@ CREATE INDEX idx_orders_items_created_at ON orders_items(created_at);
 
 -- Unique constraint to prevent duplicate items per order (one item per SKU per order)
 CREATE UNIQUE INDEX idx_orders_items_order_sku ON orders_items(order_id, sku);
+
+-- Payments table
+CREATE TABLE payments (
+  id VARCHAR(255) PRIMARY KEY,
+  amount DECIMAL(19, 2) NOT NULL CHECK (amount >= 0),
+  currency VARCHAR(3) NOT NULL CHECK (char_length(currency) = 3),
+  payment_type VARCHAR(20) NOT NULL CHECK (payment_type IN ('TARJETA', 'TRANSFERENCIA', 'EFECTIVO')),
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_payments_currency ON payments(currency);
+CREATE INDEX idx_payments_payment_type ON payments(payment_type);
+CREATE INDEX idx_payments_created_at ON payments(created_at);
 
 -- Outbox table (Event Sourcing pattern)
 CREATE TABLE outbox (

@@ -4,7 +4,6 @@ import { EventBus } from '../../application/ports/EventBus';
 import { DomainEvent } from '../../domain/events/DomainEvent';
 
 type Queryable = Pick<Pool, 'query'> | Pick<PoolClient, 'query'>;
-const AGGREGATE_TYPE = 'Order';
 
 export class OutBoxEventBus implements EventBus {
   constructor(private readonly db: Queryable) {}
@@ -28,7 +27,7 @@ export class OutBoxEventBus implements EventBus {
         valuesSql.push(`($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}::jsonb, $${base + 5})`);
         params.push(
           event.aggregateId,
-          AGGREGATE_TYPE,
+          this.resolveAggregateType(event),
           event.getEventName(),
           JSON.stringify(event.getPayload()),
           event.occurredAt
@@ -48,5 +47,9 @@ export class OutBoxEventBus implements EventBus {
         error instanceof Error ? error : undefined
       );
     }
+  }
+
+  private resolveAggregateType(event: DomainEvent): string {
+    return event.getEventName().startsWith('Payment') ? 'Payment' : 'Order';
   }
 }

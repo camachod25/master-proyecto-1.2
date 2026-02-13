@@ -4,13 +4,18 @@ import { NoopEventBus } from '../infrastructure/messaging/NoopEventBus';
 import { OutBoxEventBus } from '../infrastructure/messaging/OutBoxEventBus';
 import { CreateOrderUseCase } from '../application/use-cases/CreateOrderUseCase';
 import { AddItemToOrderUseCase } from '../application/use-cases/AddItemToOrderUseCase';
+import { CreatePaymentUseCase } from '../application/use-cases/CreatePaymentUseCase';
 import { OrdersController } from '../infrastructure/http/controllers/OrdersController';
+import { PaymentsController } from '../infrastructure/http/controllers/PaymentsController';
 import { Clock } from '../application/ports/Clock';
 import { OrderRepository } from '../application/ports/OrderRepository';
+import { PaymentRepository } from '../application/ports/PaymentRepository';
 import { EventBus } from '../application/ports/EventBus';
 import { UnitOfWork } from '../application/ports/UnitOfWork';
 import { PgUnitOfWork } from '../infrastructure/persistence/db/PgUnitOfWork';
 import { PostgresOrderRepository } from '../infrastructure/persistence/db/PostgresOrderRepository';
+import { PostgresPaymentRepository } from '../infrastructure/persistence/db/PostgresPaymentRepository';
+import { InMemoryPaymentRepository } from '../infrastructure/persistence/in-memory/InMemoryPaymentRepository';
 import { PinoLogger } from '../infrastructure/logging/PinoLogger';
 import config from './config';
 import pkg from 'pg';
@@ -33,6 +38,7 @@ class SystemClock implements Clock {
 export interface Container {
   // Puertos
   orderRepository: OrderRepository;
+  paymentRepository: PaymentRepository;
   pricingService: StaticPricingService;
   eventBus: EventBus;
   clock: Clock;
@@ -43,9 +49,11 @@ export interface Container {
   // Casos de uso
   createOrderUseCase: CreateOrderUseCase;
   addItemToOrderUseCase: AddItemToOrderUseCase;
+  createPaymentUseCase: CreatePaymentUseCase;
 
   // Controladores
   ordersController: OrdersController;
+  paymentsController: PaymentsController;
   logger: PinoLogger;
 }
 
@@ -56,6 +64,7 @@ export function buildContainer(): Container {
   const logger = new PinoLogger();
 
   let orderRepository: OrderRepository;
+  let paymentRepository: PaymentRepository;
   let eventBus: EventBus;
   let unitOfWork: UnitOfWork | undefined;
   let pool: InstanceType<typeof Pool> | undefined;
@@ -69,10 +78,12 @@ export function buildContainer(): Container {
       database: config.db.name,
     });
     orderRepository = new PostgresOrderRepository(pool);
+    paymentRepository = new PostgresPaymentRepository(pool);
     eventBus = new OutBoxEventBus(pool);
     unitOfWork = new PgUnitOfWork(pool);
   } else {
     orderRepository = new InMemoryOrderRepository();
+    paymentRepository = new InMemoryPaymentRepository();
     eventBus = new NoopEventBus();
   }
 
@@ -97,6 +108,12 @@ export function buildContainer(): Container {
     unitOfWork
   );
 
+  const createPaymentUseCase = new CreatePaymentUseCase(
+    orderRepository,
+    paymentRepository,
+    eventBus
+  );
+
   // Instanciar controladores
   const ordersController = new OrdersController(
     createOrderUseCase,
@@ -104,9 +121,15 @@ export function buildContainer(): Container {
     logger
   );
 
+  const paymentsController = new PaymentsController(
+    createPaymentUseCase,
+    logger
+  );
+
   return {
     // Puertos
     orderRepository,
+    paymentRepository,
     pricingService,
     eventBus,
     clock,
@@ -117,9 +140,11 @@ export function buildContainer(): Container {
     // Casos de uso
     createOrderUseCase,
     addItemToOrderUseCase,
+    createPaymentUseCase,
 
     // Controladores
     ordersController,
+    paymentsController,
     logger,
   };
 }

@@ -41,3 +41,31 @@ export class CurrencyMismatchError extends DomainError {
     this.name = 'CurrencyMismatchError';
   }
 }
+
+export class InvalidPaymentIdError extends DomainError {
+  constructor(message: string = 'El PaymentId no puede estar vacío') {
+    super(message);
+    this.name = 'InvalidPaymentIdError';
+  }
+}
+
+export class InvalidAmountError extends DomainError {
+  constructor(message: string = 'El monto debe ser mayor o igual a 0') {
+    super(message);
+    this.name = 'InvalidAmountError';
+  }
+}
+
+export class InvalidPaymentTypeError extends DomainError {
+  constructor(message: string = 'El tipo de pago es inválido') {
+    super(message);
+    this.name = 'InvalidPaymentTypeError';
+  }
+}
+
+export class PaymentAmountMismatchError extends DomainError {
+  constructor(message: string = 'El monto del pago debe ser igual al total de la orden') {
+    super(message);
+    this.name = 'PaymentAmountMismatchError';
+  }
+}

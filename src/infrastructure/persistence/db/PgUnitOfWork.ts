@@ -1,6 +1,7 @@
 import type { Pool } from 'pg';
 import { UnitOfWork, Repositories } from '../../../application/ports/UnitOfWork';
 import { PostgresOrderRepository } from './PostgresOrderRepository';
+import { PostgresPaymentRepository } from './PostgresPaymentRepository';
 import { Result, ok, fail } from '../../../shared/Result';
 import { AppError, InfraError } from '../../../application/errors';
 import { OutBoxEventBus } from '../../messaging/OutBoxEventBus';
@@ -16,6 +17,7 @@ export class PgUnitOfWork implements UnitOfWork {
 
       const repos: Repositories = {
         orderRepository: new PostgresOrderRepository(client),
+        paymentRepository: new PostgresPaymentRepository(client),
         eventBus: new OutBoxEventBus(client),
       };
 
